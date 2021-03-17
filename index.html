@@ -8,6 +8,7 @@
 </head>
 <body>
     <h1>game</h1>
+    <div id = 'showGameId'></div>
     <button id = 'btnCreate'>New Game</button>
     <button id = 'btnJoin'>Join Game</button>
     <input type = 'text' id = 'txtGameId'>
@@ -22,6 +23,7 @@
         const btnCreate = document.getElementById("btnCreate");
         const btnJoin = document.getElementById("btnJoin");
         const txtGameId = document.getElementById("txtGameId");
+        const showGameId = document.getElementById("showGameId");
         const divPlayers = document.getElementById("divPlayers");
         const divBoard = document.getElementById("divBoard");
  
@@ -57,7 +59,17 @@
             //create
             if (response.method === "create"){
                 gameId = response.game.id;
-                console.log("game successfully created with ID  " + response.game.id + " with " + response.game.balls + " balls ")
+                showGameId.innerHTML = response.game.id;
+                console.log("game successfully created with ID  " + gameId + " with " + response.game.balls + " balls ")
+            }
+            if(response.method === "update"){
+                if(!response.game.state) return;
+
+                for(const b of Object.keys(response.game.state)){
+                    const color = response.game.state[b];
+                    const ballObject = document.getElementById("ball" + b);
+                    ballObject.style.backgroundColor = color
+                }
             }
             if (response.method === "join") {
                 const game = response.game;
@@ -74,6 +86,30 @@
                          playerColor = c.color;
                     }
                 })
+
+                while(divBoard.firstChild){
+                    divBoard.removeChild(divBoard.firstChild)
+                }
+                for(let i=0;i<game.balls;i++){
+                    const b = document.createElement("button");
+                    b.id = "ball" + (i+1);
+                    b.tag = i+1;
+                    b.textContent=i+1;
+                    b.style.width="150px"
+                    b.style.height="150px"
+                    b.addEventListener("click", e=>{
+                        b.style.background = playerColor;
+                        const payLoad = {
+                            "method": "play",
+                            "clientId": clientId,
+                            "gameId": gameId,
+                            "ballId": b.tag,
+                            "color": playerColor
+                        }
+                        ws.send(JSON.stringify(payLoad))
+                    })
+                    divBoard.appendChild(b); 
+                }
                 
             }
         }

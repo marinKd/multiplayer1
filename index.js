@@ -44,7 +44,7 @@ wsServer.on("request", request => {
             const gameId = result.gameId;
             const game = games[gameId];
             if (game.clients.length >= 3) {
-                //sorry max players reach
+                //sorry max players reached
                 return;
             }
             const color = { "0": "Red", "1": "Green", "2": "Blue" }[game.clients.length]
@@ -52,6 +52,7 @@ wsServer.on("request", request => {
                 "clientId": clientId,
                 "color": color
             })
+            if(game.clients.length === 3) updateGameState();
             //start the game
             if (game.clients.length === 3) updateGameState();
 
@@ -64,6 +65,20 @@ wsServer.on("request", request => {
                 clients[c.clientId].connection.send(JSON.stringify(payLoad))
             })
         }
+        //user plays
+        if(result.method === "play"){
+            const gameId = result.gameId;
+            const ballId = result.ballId;
+            const color = result.color;
+            let state = games[gameId].state;
+            if(!state)
+                state = {}
+            
+            state[ballId] = color;
+            games[gameId].state = state;
+
+        }
+
     })
     //generate a new clientId
 
@@ -81,6 +96,25 @@ wsServer.on("request", request => {
     connection.send(JSON.stringify(payLoad))
 
 })
+
+function updateGameState(){
+
+
+
+    for(const g of Object.keys(games)){
+        const game = games[g]
+        const payLoad = {
+            "method": "update",
+            "game": game
+
+        }
+
+        games[g].clients.forEach(c=> {
+            clients[c.clientId].connection.send(JSON.stringify(payLoad))
+        })
+    }
+    setTimeout(updateGameState, 500);
+}
 
     function S4() {
         return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
